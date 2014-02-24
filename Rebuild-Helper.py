@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# coding=utf-8
 import sys
 import os
 import subprocess
@@ -21,6 +22,15 @@ def rebuild_helper(package_name):
     #  print(os.getcwd())
     subprocess.call(['apt-get', 'source', package_name])
     subprocess.call(['sudo', 'apt-get', 'build-dep', package_name])
+    print("would you like to compile the program and",
+          "copy foo to foo.orig ?")
+    answer = input()
+    if answer == 'y' or answer == 'yes':
+        directories = [name for name in os.listdir(".") if os.path.isdir(name)]
+        os.chdir(directories[0])
+        #  print(os.getcwd())
+        subprocess.call(['dpkg-buildpackage', '-uc', '-us', '-nc', '-b'])
+        subprocess.call(['cp', '-r', '../../' + package_name, '../../' + package_name + '.orig'])
 
 
 def main():
@@ -37,6 +47,5 @@ def main():
 
 
 if __name__ == '__main__':
-    print("changing to work directory...")
     os.chdir(HOME + '/src/src_Work/')
     main()
