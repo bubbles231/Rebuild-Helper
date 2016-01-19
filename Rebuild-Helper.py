@@ -66,7 +66,7 @@ def configure_work_dir(wd_default):
                 prompting = False
             elif answer == 'n':
                 is_correct = False
-                prompting = False
+                break
             else:
                 print("WARNING: You entered an invalid option")
                 prompting = True
