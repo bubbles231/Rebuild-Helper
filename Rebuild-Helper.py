@@ -7,52 +7,125 @@ import subprocess
 
 START_DIR = os.getcwd()
 HOME = os.getenv("HOME")
+work_dir = "/src/src_Work/"
 
 
 def rebuild_helper(package_name):
+    """
+
+    :param package_name: Debian package name
+    :return: Nothing
+    """
     print(package_name)
     try:
         os.mkdir(package_name)
     except FileExistsError:
-        print('Directory exists! Quit?')
+        print('WARNING: Directory exists! Quit?')
         answer = input()
         if answer == 'y' or answer == 'yes':
             return
     os.chdir(os.getcwd() + '/' + package_name + '/')
-    #  print(os.getcwd())
     subprocess.call(['apt-get', '-t', 'unstable', 'source', package_name])
     subprocess.call(['sudo', 'apt-get', 'build-dep', package_name])
-    print("would you like to compile the program and",
+    print("PROMPT: would you like to compile the program and",
           "copy foo to foo.orig ?")
     answer = input()
     if answer == 'y' or answer == 'yes':
         directories = [name for name in os.listdir(".") if os.path.isdir(name)]
         os.chdir(directories[0])
-        #  print(os.getcwd())
         subprocess.call(['dpkg-buildpackage', '-uc', '-us', '-nc', '-b'])
         subprocess.call(['cp', '-r', '../../' + package_name, '../../' + package_name + '.orig'])
 
 
-def diff_creator(package_name):
-    print("MAKE ME!: diff_creator")
+def configure_work_dir(wd_default):
+    """
+    This function will configure the working directory to rebuild packages in.
+    :param wd_default: Default working directory
+    :return: working_dir (path)
+    """
+
+    prompting = True
+    configuring = True
+    is_correct = False
+    working_dir = wd_default
+    while configuring:
+        print("PROMPT: What is your package rebuilding directory path?\n" +
+              "INFO: (Program will append your home directory to the path entered)\n" +
+              "INFO: (Enter nothing for default)")
+        print("INFO: (Default = $HOME/src/src_Work/)")
+        working_dir = input()
+
+        if working_dir == "":
+            working_dir = wd_default
+
+        while prompting:
+            print("INFO: You choose: '$HOME" + working_dir + "' Is this correct? [y/n]")
+            answer = input()
+            if answer == 'y':
+                is_correct = True
+                prompting = False
+            elif answer == 'n':
+                is_correct = False
+                prompting = False
+            else:
+                print("WARNING: You entered an invalid option")
+                prompting = True
+
+        if is_correct:
+            configuring = False
+
+    return working_dir
+
+
+def create_directory(working_dir):
+    """
+    Create a directory that the user wanted if it doesn't exist.
+    :param working_dir: Path
+    """
+    prompting = True
+
+    while prompting:
+        print("PROMPT: Create directory(s)? [y/n]")
+        answer = input()
+        if answer == 'y':
+            print("INFO: Creating $HOME" + working_dir)
+            os.makedirs(HOME + working_dir)
+            prompting = False
+        elif answer == 'n':
+            print("INFO: Not creating directory, exiting program...")
+            sys.exit(0)
+        else:
+            print("WARNING: You entered an invalid option")
+            prompting = True
 
 
 def main():
+    """
+    Function that makes the program take arguments and runs the main method to rebuild packages.
+    :return: Nothing
+    """
     arg_number = 0
     for arg in sys.argv:
         if arg == '-h' or arg == '--help':
             print('Type the name of the package you want to',
-                  'rebuild with -n or --name or diff with -d or --diff')
+                  'rebuild with -n or --name')
             return
         if arg == '-n' or arg == '--name':
             rebuild_helper(sys.argv[arg_number + 1])
 
         if arg == '-d' or arg == '--debug':
-            diff_creator(sys.argv[arg_number + 1])
+            print("No debugging info to show for now")
 
         arg_number += 1
 
 
 if __name__ == '__main__':
-    os.chdir(HOME + '/src/src_Work/')
+    work_dir = configure_work_dir(work_dir)
+
+    try:
+        os.chdir(HOME + work_dir)
+    except FileNotFoundError:
+        print("WARNING: No such file or directory for $HOME" + work_dir)
+        create_directory(work_dir)
+
     main()
